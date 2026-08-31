@@ -17,24 +17,42 @@ const Dashboard = () => {
   React.useEffect(() => {
     const fetchData = async () => {
       // 1. Obtener los cálculos
-      const { data: calcData } = await supabase
+      const { data: calcData, error: calcError } = await supabase
         .from('calculos')
         .select('*')
         .order('fecha_creacion', { ascending: false });
-        
+
+      if (calcError) {
+        console.error('Error al obtener cálculos:', calcError);
+        setLoading(false);
+        return;
+      }
+
       if (calcData && calcData.length > 0) {
-        setCalculos(calcData);
-        // 2. Obtener el detalle del último cálculo para el gráfico
-        const ultimoId = calcData[0].id;
-        const { data: detData } = await supabase
+        const calculoIds = calcData.map((calculo) => calculo.id);
+
+        const { data: detData, error: detError } = await supabase
           .from('detalle_alcances')
           .select('*')
-          .eq('calculo_id', ultimoId)
-          .single();
-          
-        if (detData) setDetalles(detData);
+          .in('calculo_id', calculoIds);
+
+        if (detError) {
+          console.error('Error al obtener detalles:', detError);
+        }
+
+        const detallesPorCalculo = new Map(
+          (detData || []).map((detalle) => [detalle.calculo_id, detalle])
+        );
+
+        const calculosConDetalle = calcData.map((calculo) => ({
+          ...calculo,
+          detalle: detallesPorCalculo.get(calculo.id) || null,
+        }));
+
+        setCalculos(calculosConDetalle);
+        setDetalles(calculosConDetalle[0].detalle);
       }
-      setLoading(false);
+      setLoading(false); //--------------------------------
     };
     fetchData();
   }, []);
@@ -131,7 +149,7 @@ const Dashboard = () => {
       <div className="grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '1.5rem', marginBottom: '2rem' }}>
         <div className="card" style={{ backgroundColor: 'var(--color-primary)', color: 'white', border: 'none' }}>
           <h3 style={{ fontSize: '1rem', fontWeight: '600', marginBottom: '0.5rem', color: 'rgba(255,255,255,0.9)' }}>Emisiones Totales</h3>
-          <p style={{ fontSize: '2.5rem', fontWeight: '700', lineHeight: 1 }}>{ultimoCalculo ? ultimoCalculo.total_emisiones : '0.00'} <span style={{ fontSize: '1.25rem', fontWeight: '400' }}>tCO₂eq</span></p>
+          <p style={{ fontSize: '2.5rem', fontWeight: '700', lineHeight: 1 }}>{ultimoCalculo ? Number(ultimoCalculo.total_emisiones).toFixed(2) : '0.00'} <span style={{ fontSize: '1.25rem', fontWeight: '400' }}>tCO₂eq</span></p>
         </div>
         
         <div className="card">
@@ -191,10 +209,10 @@ const Dashboard = () => {
                 <tr key={calc.id} style={{ borderBottom: '1px solid var(--color-border)' }}>
                   <td style={{ padding: '1rem', fontWeight: '600' }}>{calc.nombre_periodo}</td>
                   <td style={{ padding: '1rem' }}>{new Date(calc.fecha_creacion).toLocaleDateString()}</td>
-                  <td style={{ padding: '1rem' }}>-</td>
-                  <td style={{ padding: '1rem' }}>-</td>
-                  <td style={{ padding: '1rem' }}>-</td>
-                  <td style={{ padding: '1rem', fontWeight: '700', color: 'var(--color-primary-dark)' }}>{calc.total_emisiones}</td>
+                  <td style={{ padding: '1rem' }}>{calc.detalle ? Number(calc.detalle.alcance1).toFixed(2) : '-'}</td>
+                  <td style={{ padding: '1rem' }}>{calc.detalle ? Number(calc.detalle.alcance2).toFixed(2) : '-'}</td>
+                  <td style={{ padding: '1rem' }}>{calc.detalle ? Number(calc.detalle.alcance3).toFixed(2) : '-'}</td>
+                  <td style={{ padding: '1rem', fontWeight: '700', color: 'var(--color-primary-dark)' }}>{Number(calc.total_emisiones).toFixed(2)}</td>
                   <td style={{ padding: '1rem', textAlign: 'center' }}>
                     <button className="outline" style={{ padding: '0.5rem' }} title="Ver Reporte">
                       <FileText size={16} />
