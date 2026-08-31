@@ -1,8 +1,10 @@
 import React from 'react';
 import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend, ArcElement } from 'chart.js';
 import { Bar, Doughnut } from 'react-chartjs-2';
-import { FileText, Download } from 'lucide-react';
+import { FileText, Download, Plus } from 'lucide-react';
 import { supabase } from '../lib/supabase';
+import { jsPDF } from 'jspdf';
+import { Link } from 'react-router-dom';
 
 // Registrar componentes de Chart.js
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend, ArcElement);
@@ -75,6 +77,38 @@ const Dashboard = () => {
     },
   };
 
+  const exportToPDF = () => {
+    if (!ultimoCalculo) return alert('No hay datos para exportar.');
+    
+    const doc = new jsPDF();
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(22);
+    doc.text('Certificado de Medición - EcoHuella Perú', 20, 20);
+    
+    doc.setFontSize(14);
+    doc.setFont('helvetica', 'normal');
+    doc.text(`Período reportado: ${ultimoCalculo.nombre_periodo}`, 20, 35);
+    doc.text(`Fecha de emisión: ${new Date(ultimoCalculo.fecha_creacion).toLocaleDateString()}`, 20, 45);
+    
+    doc.setFontSize(16);
+    doc.setFont('helvetica', 'bold');
+    doc.text(`Total de Emisiones: ${ultimoCalculo.total_emisiones} tCO2eq`, 20, 65);
+    
+    if (detalles) {
+      doc.setFontSize(12);
+      doc.setFont('helvetica', 'normal');
+      doc.text(`- Alcance 1 (Emisiones Directas): ${detalles.alcance1.toFixed(2)} tCO2eq`, 20, 80);
+      doc.text(`- Alcance 2 (Energía Adquirida): ${detalles.alcance2.toFixed(2)} tCO2eq`, 20, 90);
+      doc.text(`- Alcance 3 (Otras Indirectas): ${detalles.alcance3.toFixed(2)} tCO2eq`, 20, 100);
+    }
+    
+    doc.setFontSize(10);
+    doc.setTextColor(100);
+    doc.text('Este documento fue generado por la plataforma EcoHuella Perú.', 20, 280);
+    
+    doc.save(`EcoHuella_Reporte_${ultimoCalculo.anio}.pdf`);
+  };
+
   if (loading) return <div className="container text-center mt-2">Cargando datos...</div>;
 
   return (
@@ -85,8 +119,12 @@ const Dashboard = () => {
           <p className="text-muted">Resumen del período: {ultimoCalculo ? ultimoCalculo.nombre_periodo : 'Ninguno'}</p>
         </div>
         <div style={{ display: 'flex', gap: '1rem' }}>
-          <button className="outline"><Download size={20} /> Exportar PDF</button>
-          <button onClick={() => window.location.href='/calculadora'}>Nuevo Cálculo</button>
+          <button className="outline" onClick={exportToPDF} disabled={!hasData}>
+            <Download size={20} /> Exportar PDF
+          </button>
+          <Link to="/calculadora">
+            <button><Plus size={20} /> Nuevo Cálculo</button>
+          </Link>
         </div>
       </div>
 

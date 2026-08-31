@@ -1,9 +1,31 @@
-import React from 'react';
-import { Link, useLocation } from 'react-router-dom';
-import { Leaf, BarChart2, Home, User } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { Leaf, BarChart2, Home, User, LogOut } from 'lucide-react';
+import { supabase } from '../../lib/supabase';
 
 const Navbar = () => {
   const location = useLocation();
+  const navigate = useNavigate();
+  const [session, setSession] = useState(null);
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+    });
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    navigate('/');
+  };
 
   const navStyles = {
     backgroundColor: 'var(--color-bg-card)',
@@ -60,9 +82,20 @@ const Navbar = () => {
           <Link to="/dashboard" style={linkStyles('/dashboard')}>
             <User size={20} /> Mi Panel
           </Link>
-          <button onClick={() => alert('Próximamente: Inicio de Sesión')}>
-            Iniciar Sesión
-          </button>
+          {session ? (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+              <span style={{ fontSize: '0.875rem', fontWeight: '600', color: 'var(--color-primary-dark)' }}>
+                {session.user.email}
+              </span>
+              <button className="outline" onClick={handleLogout} style={{ padding: '0.5rem 1rem', fontSize: '0.875rem' }}>
+                <LogOut size={16} /> Salir
+              </button>
+            </div>
+          ) : (
+            <Link to="/auth">
+              <button>Iniciar Sesión</button>
+            </Link>
+          )}
         </div>
       </div>
     </nav>

@@ -17,14 +17,20 @@ const Home = () => {
               Calcular mi huella <ArrowRight size={24} />
             </button>
           </Link>
-          <button className="outline" style={{ padding: '1rem 2rem', fontSize: '1.25rem' }}>
+          <button 
+            className="outline" 
+            style={{ padding: '1rem 2rem', fontSize: '1.25rem' }}
+            onClick={() => {
+              document.getElementById('features-section').scrollIntoView({ behavior: 'smooth' });
+            }}
+          >
             ¿Cómo funciona?
           </button>
         </div>
       </section>
 
       {/* Features */}
-      <section style={{ padding: '4rem 0' }}>
+      <section id="features-section" style={{ padding: '4rem 0' }}>
         <h2 className="h2 text-center">Una plataforma completa para tu acción climática</h2>
         <div className="grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '2rem', marginTop: '3rem' }}>
           <div className="card text-center">

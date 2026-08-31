@@ -4,6 +4,7 @@ import Layout from './components/layout/Layout';
 import Home from './pages/Home';
 import Calculator from './pages/Calculator';
 import Dashboard from './pages/Dashboard';
+import Auth from './pages/Auth';
 
 function App() {
   return (
@@ -11,6 +12,7 @@ function App() {
       <Layout>
         <Routes>
           <Route path="/" element={<Home />} />
+          <Route path="/auth" element={<Auth />} />
           <Route path="/calculadora" element={<Calculator />} />
           <Route path="/dashboard" element={<Dashboard />} />
         </Routes>
