@@ -1,0 +1,120 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+:root {
+  /* Colores Principales */
+  --color-primary: #10B981; /* Verde hoja - Sostenibilidad */
+  --color-primary-dark: #059669;
+  --color-secondary: #0F172A; /* Azul/Gris muy oscuro - Profesional */
+  
+  /* Fondos y Superficies */
+  --color-bg-main: #F8FAFC;
+  --color-bg-card: #FFFFFF;
+  --color-bg-sidebar: #0F172A;
+  
+  /* Textos */
+  --color-text-main: #1E293B;
+  --color-text-muted: #64748B;
+  --color-text-light: #F8FAFC;
+  
+  /* Bordes y Separadores */
+  --color-border: #E2E8F0;
+  
+  /* Diseño flat sin bordes redondeados */
+  --radius: 0px;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  font-family: 'Inter', sans-serif;
+  border-radius: var(--radius) !important; /* Forzar 0px en todo */
+}
+
+body {
+  background-color: var(--color-bg-main);
+  color: var(--color-text-main);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Tipografía Accesible */
+h1, h2, h3, h4, h5, h6 {
+  color: var(--color-secondary);
+  font-weight: 700;
+  margin-bottom: 1rem;
+}
+
+h1 { font-size: 2.5rem; }
+h2 { font-size: 2rem; }
+h3 { font-size: 1.5rem; }
+p { font-size: 1.125rem; line-height: 1.6; margin-bottom: 1rem; }
+
+/* Controles e Inputs accesibles */
+button {
+  background-color: var(--color-primary);
+  color: white;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  font-size: 1.125rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+button:hover {
+  background-color: var(--color-primary-dark);
+}
+
+button.outline {
+  background-color: transparent;
+  color: var(--color-primary);
+  border: 2px solid var(--color-primary);
+}
+
+button.outline:hover {
+  background-color: var(--color-primary);
+  color: white;
+}
+
+input, select, textarea {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  font-size: 1.125rem;
+  border: 2px solid var(--color-border);
+  background-color: var(--color-bg-card);
+  color: var(--color-text-main);
+  transition: border-color 0.2s;
+}
+
+input:focus, select:focus, textarea:focus {
+  outline: none;
+  border-color: var(--color-primary);
+}
+
+/* Layout Classes */
+.card {
+  background-color: var(--color-bg-card);
+  padding: 2rem;
+  border: 1px solid var(--color-border);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+}
+
+.container {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 1.5rem;
+}
+
+/* Utilidades */
+.text-center { text-align: center; }
+.mt-1 { margin-top: 1rem; }
+.mt-2 { margin-top: 2rem; }
+.mb-1 { margin-bottom: 1rem; }
+.mb-2 { margin-bottom: 2rem; }
+.flex { display: flex; }
+.grid { display: grid; }
