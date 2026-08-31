@@ -6,6 +6,7 @@ import Home from './pages/Home';
 import Calculator from './pages/Calculator';
 import Dashboard from './pages/Dashboard';
 import Auth from './pages/Auth';
+import SmartImport from './pages/SmartImport';
 
 const ProtectedRoute = ({ children }) => {
   const [session, setSession] = useState(undefined);
@@ -42,6 +43,12 @@ function App() {
               <Calculator />
             </ProtectedRoute>
           } />
+          <Route path="/importar" element={
+            <ProtectedRoute>
+              <SmartImport />
+            </ProtectedRoute>
+          } />
+
           <Route path="/dashboard" element={
             <ProtectedRoute>
               <Dashboard />

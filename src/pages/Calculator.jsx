@@ -2,9 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { Factory, Zap, Truck, CheckCircle, BarChart3, ArrowRight, ArrowLeft } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { calculateEmissions } from '../services/emissionCalculator';
+import { useLocation } from 'react-router-dom';
 
 const Calculator = () => {
   // Inicializar estado desde localStorage si existe
+  const location = useLocation();
   const getInitialState = (key, defaultValue) => {
     const saved = localStorage.getItem(key);
     return saved ? JSON.parse(saved) : defaultValue;
@@ -25,6 +27,18 @@ const Calculator = () => {
 
   const [factores, setFactores] = useState({});
   const [isSaving, setIsSaving] = useState(false);
+  
+  useEffect(() => {
+   const importedData = location.state?.importedData;
+
+    if (!importedData) return;
+
+    setFormData((previousData) => ({
+      ...previousData,
+      ...importedData,
+    }));
+    setStep(1);
+  }, [location.state]);
 
   // Guardar en localStorage cada vez que cambien los datos o el paso
   useEffect(() => {

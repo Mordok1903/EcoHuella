@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Leaf, BarChart2, Home, User, LogOut } from 'lucide-react';
+import { Leaf, BarChart2, Home, User, LogOut, FileUp } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 
 const Navbar = () => {
@@ -78,6 +78,9 @@ const Navbar = () => {
           </Link>
           <Link to="/calculadora" style={linkStyles('/calculadora')}>
             <BarChart2 size={20} /> Calcular Huella
+          </Link>
+          <Link to="/importar" style={linkStyles('/importar')}>
+            <FileUp size={20} /> Importar Datos
           </Link>
           <Link to="/dashboard" style={linkStyles('/dashboard')}>
             <User size={20} /> Mi Panel
