@@ -7,6 +7,10 @@ const Auth = () => {
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [nombre, setNombre] = useState('');
+  const [tipoUsuario, setTipoUsuario] = useState('persona');
+  const [documento, setDocumento] = useState('');
+  
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
   const navigate = useNavigate();
@@ -28,9 +32,17 @@ const Auth = () => {
         const { error } = await supabase.auth.signUp({
           email,
           password,
+          options: {
+            data: {
+              nombre: nombre,
+              tipo_usuario: tipoUsuario,
+              documento: documento
+            }
+          }
         });
         if (error) throw error;
-        setMessage('Registro exitoso. Revisa tu correo para verificar tu cuenta (o inicia sesión si el correo no requiere verificación en local).');
+        setMessage('Registro exitoso. Ya puedes iniciar sesión con tus credenciales.');
+        setIsLogin(true); // Cambiar a la vista de login automáticamente
       }
     } catch (error) {
       setMessage(error.message || 'Ocurrió un error');
@@ -55,7 +67,50 @@ const Auth = () => {
         )}
 
         <form onSubmit={handleSubmit} style={{ textAlign: 'left' }}>
-          <div style={{ marginBottom: '1.5rem' }}>
+          {!isLogin && (
+            <>
+              <div style={{ marginBottom: '1rem' }}>
+                <label style={{ display: 'block', fontWeight: '600', marginBottom: '0.5rem' }}>Tipo de Usuario</label>
+                <select 
+                  value={tipoUsuario} 
+                  onChange={(e) => setTipoUsuario(e.target.value)}
+                  style={{ width: '100%', padding: '0.75rem', border: '1px solid var(--color-border)' }}
+                >
+                  <option value="persona">Persona Natural</option>
+                  <option value="mype">MYPE / PYME</option>
+                  <option value="empresa">Empresa / Corporación</option>
+                </select>
+              </div>
+
+              <div style={{ marginBottom: '1rem' }}>
+                <label style={{ display: 'block', fontWeight: '600', marginBottom: '0.5rem' }}>
+                  {tipoUsuario === 'persona' ? 'Nombre Completo' : 'Razón Social'}
+                </label>
+                <input 
+                  type="text" 
+                  value={nombre} 
+                  onChange={(e) => setNombre(e.target.value)} 
+                  required={!isLogin} 
+                  placeholder={tipoUsuario === 'persona' ? 'Juan Pérez' : 'Mi Empresa S.A.C.'}
+                />
+              </div>
+
+              <div style={{ marginBottom: '1.5rem' }}>
+                <label style={{ display: 'block', fontWeight: '600', marginBottom: '0.5rem' }}>
+                  {tipoUsuario === 'persona' ? 'DNI (Opcional)' : 'RUC'}
+                </label>
+                <input 
+                  type="text" 
+                  value={documento} 
+                  onChange={(e) => setDocumento(e.target.value)} 
+                  required={tipoUsuario !== 'persona'} 
+                  placeholder={tipoUsuario === 'persona' ? '12345678' : '20123456789'}
+                />
+              </div>
+            </>
+          )}
+
+          <div style={{ marginBottom: '1rem' }}>
             <label style={{ display: 'block', fontWeight: '600', marginBottom: '0.5rem' }}>Correo Electrónico</label>
             <input 
               type="email" 
