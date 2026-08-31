@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Factory, Zap, Truck, CheckCircle, BarChart3, ArrowRight, ArrowLeft } from 'lucide-react';
 import { supabase } from '../lib/supabase';
+import { calculateEmissions } from '../services/emissionCalculator';
 
 const Calculator = () => {
   // Inicializar estado desde localStorage si existe
@@ -55,29 +56,9 @@ const Calculator = () => {
     }));
   };
 
-  const calcularResultados = () => {
-    // Usar factores de la base de datos o defaults si aún no cargan
-    const factorGasolina = factores.gasolina || 2.31;
-    const factorDiesel = factores.diesel || 2.68;
-    const factorGLP = factores.glp || 2.98;
-    const factorElectricidad = factores.electricidad || 0.549;
-    const factorVuelos = factores.vuelos || 0.255;
-    const factorResiduos = factores.residuos || 0.572;
+  
 
-    const a1 = (formData.gasolina * factorGasolina) + (formData.diesel * factorDiesel) + (formData.glp * factorGLP);
-    const a2 = (formData.electricidad * factorElectricidad);
-    const a3 = (formData.vuelos * factorVuelos) + (formData.residuos * factorResiduos);
-    
-    // Retornar en toneladas (tCO2eq) sin redondear a string aún para guardar en BD
-    return {
-      a1: a1 / 1000,
-      a2: a2 / 1000,
-      a3: a3 / 1000,
-      total: (a1 + a2 + a3) / 1000
-    };
-  };
-
-  const resultados = calcularResultados();
+  const resultados = calculateEmissions(formData, factores);
 
   const guardarResultados = async () => {
     setIsSaving(true);
