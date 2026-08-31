@@ -22,7 +22,7 @@ const Calculator = () => {
     residuos: 0,
     papel: 0
   }));
-  
+
   const [factores, setFactores] = useState({});
   const [isSaving, setIsSaving] = useState(false);
 
@@ -54,12 +54,12 @@ const Calculator = () => {
       ...prev,
       [name]: value
     }));
-  };  
+  };
   const resultados = calculateEmissions(formData, factores);
 
   const guardarResultados = async () => {
     setIsSaving(true);
-    
+
     // 1. Guardar en tabla calculos
     const { data: calculoData, error: err1 } = await supabase.from('calculos').insert([{
       nombre_periodo: formData.nombrePeriodo || 'Sin nombre',
@@ -76,11 +76,11 @@ const Calculator = () => {
         alcance3: resultados.a3
       }]);
     }
-    
+
     // Limpiar localStorage al guardar exitosamente
     localStorage.removeItem('ecoHuella_formData');
     localStorage.removeItem('ecoHuella_step');
-    
+
     setIsSaving(false);
     setStep(5);
   };
@@ -105,7 +105,7 @@ const Calculator = () => {
     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '3rem', position: 'relative' }}>
       <div style={{ position: 'absolute', top: '24px', left: '0', right: '0', height: '4px', backgroundColor: 'var(--color-border)', zIndex: 0, transform: 'translateY(-50%)' }}></div>
       <div style={{ position: 'absolute', top: '24px', left: '0', width: `${((step - 1) / 4) * 100}%`, height: '4px', backgroundColor: 'var(--color-primary)', zIndex: 0, transform: 'translateY(-50%)', transition: 'width 0.3s' }}></div>
-      
+
       {[
         { id: 1, label: 'Inicio', icon: <CheckCircle size={20} /> },
         { id: 2, label: 'Alcance 1', icon: <Factory size={20} /> },
@@ -114,9 +114,9 @@ const Calculator = () => {
         { id: 5, label: 'Resultados', icon: <BarChart3 size={20} /> }
       ].map((s) => (
         <div key={s.id} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', zIndex: 1, gap: '0.5rem', width: '20%' }}>
-          <div style={{ 
-            width: '48px', height: '48px', 
-            backgroundColor: step >= s.id ? 'var(--color-primary)' : 'var(--color-bg-card)', 
+          <div style={{
+            width: '48px', height: '48px',
+            backgroundColor: step >= s.id ? 'var(--color-primary)' : 'var(--color-bg-card)',
             border: step >= s.id ? '2px solid var(--color-primary)' : '2px solid var(--color-border)',
             color: step >= s.id ? 'white' : 'var(--color-text-muted)',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -133,7 +133,7 @@ const Calculator = () => {
   return (
     <div className="container" style={{ maxWidth: '800px' }}>
       <h1 className="h2 text-center mb-2">Medición de Huella de Carbono</h1>
-      
+
       <StepIndicator />
 
       <div className="card">
@@ -141,7 +141,7 @@ const Calculator = () => {
           <div className="fade-in">
             <h2 className="h3">1. Datos Generales del Período</h2>
             <p className="text-muted mb-2">Defina los parámetros básicos de su medición para poder identificarla luego en su historial.</p>
-            
+
             <div className="grid" style={{ gap: '1.5rem', marginBottom: '2rem' }}>
               <div>
                 <label style={{ display: 'block', fontWeight: '600', marginBottom: '0.5rem' }}>Nombre del Período / Proyecto</label>
@@ -167,7 +167,7 @@ const Calculator = () => {
           <div className="fade-in">
             <h2 className="h3">2. Alcance 1: Emisiones Directas</h2>
             <p className="text-muted mb-2">Ingrese el consumo de combustibles en instalaciones o vehículos de su propiedad durante el año seleccionado.</p>
-            
+
             <div className="grid" style={{ gap: '1.5rem', marginBottom: '2rem' }}>
               <div>
                 <label style={{ display: 'block', fontWeight: '600', marginBottom: '0.5rem' }}>Gasolina (Litros)</label>
@@ -194,7 +194,7 @@ const Calculator = () => {
           <div className="fade-in">
             <h2 className="h3">3. Alcance 2: Emisiones Indirectas</h2>
             <p className="text-muted mb-2">Ingrese el consumo total de electricidad de la red pública. (Basado en el Factor de Emisión del SEIN de Perú).</p>
-            
+
             <div className="grid" style={{ gap: '1.5rem', marginBottom: '2rem' }}>
               <div>
                 <label style={{ display: 'block', fontWeight: '600', marginBottom: '0.5rem' }}>Electricidad Consumida (kWh)</label>
@@ -216,7 +216,7 @@ const Calculator = () => {
           <div className="fade-in">
             <h2 className="h3">4. Alcance 3: Otras Emisiones Indirectas</h2>
             <p className="text-muted mb-2">Ingrese datos de actividades de terceros (viajes de negocio, gestión de residuos, etc).</p>
-            
+
             <div className="grid" style={{ gap: '1.5rem', marginBottom: '2rem' }}>
               <div>
                 <label style={{ display: 'block', fontWeight: '600', marginBottom: '0.5rem' }}>Vuelos Aéreos (Kilómetros recorridos)</label>
@@ -244,7 +244,7 @@ const Calculator = () => {
             </div>
             <h2 className="h2 mb-2">¡Cálculo Completado!</h2>
             <p className="text-muted mb-2">Su Huella de Carbono para {formData.nombrePeriodo || 'el período'} ha sido calculada exitosamente.</p>
-            
+
             <div style={{ backgroundColor: 'var(--color-bg-main)', padding: '2rem', border: '1px solid var(--color-border)', margin: '2rem 0' }}>
               <h3 style={{ fontSize: '1.25rem', color: 'var(--color-text-muted)', marginBottom: '0.5rem' }}>Total Emisiones</h3>
               <p style={{ fontSize: '4rem', fontWeight: '700', color: 'var(--color-secondary)', lineHeight: 1 }}>
@@ -277,7 +277,7 @@ const Calculator = () => {
           </div>
         )}
       </div>
-      
+
       <style>{`
         .fade-in {
           animation: fadeIn 0.4s ease-in-out;
