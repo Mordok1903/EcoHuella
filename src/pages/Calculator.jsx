@@ -4,6 +4,37 @@ import { supabase } from '../lib/supabase';
 import { calculateEmissions } from '../services/emissionCalculator';
 import { useLocation } from 'react-router-dom';
 
+
+const StepIndicator = () => (
+  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '3rem', position: 'relative' }}>
+    <div style={{ position: 'absolute', top: '24px', left: '0', right: '0', height: '4px', backgroundColor: 'var(--color-border)', zIndex: 0, transform: 'translateY(-50%)' }}></div>
+    <div style={{ position: 'absolute', top: '24px', left: '0', width: `${((step - 1) / 4) * 100}%`, height: '4px', backgroundColor: 'var(--color-primary)', zIndex: 0, transform: 'translateY(-50%)', transition: 'width 0.3s' }}></div>
+
+    {[
+      { id: 1, label: 'Inicio', icon: <CheckCircle size={20} /> },
+      { id: 2, label: 'Alcance 1', icon: <Factory size={20} /> },
+      { id: 3, label: 'Alcance 2', icon: <Zap size={20} /> },
+      { id: 4, label: 'Alcance 3', icon: <Truck size={20} /> },
+      { id: 5, label: 'Resultados', icon: <BarChart3 size={20} /> }
+    ].map((s) => (
+      <div key={s.id} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', zIndex: 1, gap: '0.5rem', width: '20%' }}>
+      <div style={{
+          width: '48px', height: '48px',
+          backgroundColor: step >= s.id ? 'var(--color-primary)' : 'var(--color-bg-card)',
+          border: step >= s.id ? '2px solid var(--color-primary)' : '2px solid var(--color-border)',
+          color: step >= s.id ? 'white' : 'var(--color-text-muted)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          transition: 'all 0.3s'
+        }}>
+         {s.icon}
+       </div>
+        <span style={{ fontWeight: step >= s.id ? '700' : '500', color: step >= s.id ? 'var(--color-text-main)' : 'var(--color-text-muted)', fontSize: '0.875rem', textAlign: 'center' }}>{s.label}</span>
+      </div>
+    ))}
+  </div>
+);
+
+
 const Calculator = () => {
   // Inicializar estado desde localStorage si existe
   const location = useLocation();
@@ -12,33 +43,32 @@ const Calculator = () => {
     return saved ? JSON.parse(saved) : defaultValue;
   };
 
-  const [step, setStep] = useState(() => getInitialState('ecoHuella_step', 1));
-  const [formData, setFormData] = useState(() => getInitialState('ecoHuella_formData', {
-    nombrePeriodo: '',
-    anio: '2026',
-    gasolina: 0,
-    diesel: 0,
-    glp: 0,
-    electricidad: 0,
-    vuelos: 0,
-    residuos: 0,
-    papel: 0
-  }));
+  const importedData = location.state?.importedData;
+
+  const [step, setStep] = useState(() =>
+    importedData ? 1 : getInitialState('ecoHuella_step', 1)
+  );
+
+  const [formData, setFormData] = useState(() => {
+    const savedData = getInitialState('ecoHuella_formData', {
+      nombrePeriodo: '',
+      anio: '2026',
+      gasolina: 0,
+      diesel: 0,
+      glp: 0,
+      electricidad: 0,
+      vuelos: 0,
+      residuos: 0,
+      papel: 0,
+    });
+
+    return importedData
+      ? { ...savedData, ...importedData }
+      : savedData;
+  });
 
   const [factores, setFactores] = useState({});
   const [isSaving, setIsSaving] = useState(false);
-  
-  useEffect(() => {
-   const importedData = location.state?.importedData;
-
-    if (!importedData) return;
-
-    setFormData((previousData) => ({
-      ...previousData,
-      ...importedData,
-    }));
-    setStep(1);
-  }, [location.state]);
 
   // Guardar en localStorage cada vez que cambien los datos o el paso
   useEffect(() => {
@@ -53,6 +83,12 @@ const Calculator = () => {
     // Cargar factores de emisión desde la base de datos
     const fetchFactores = async () => {
       const { data, error } = await supabase.from('factores_emision').select('*');
+
+      if (error) {
+        console.error('Error al cargar factores de emisión:', error);
+        return;
+      }
+
       if (data) {
         const factorMap = {};
         data.forEach(f => factorMap[f.fuente] = parseFloat(f.factor));
@@ -81,6 +117,14 @@ const Calculator = () => {
       total_emisiones: resultados.total
     }]).select();
 
+    if (err1) {
+      console.error('Error al guardar el cálculo:', err1);
+      setIsSaving(false);
+      alert('No se pudo guardar el cálculo. Inténtalo nuevamente.');
+      return;
+    }
+
+
     if (calculoData && calculoData.length > 0) {
       // 2. Guardar en tabla detalle
       await supabase.from('detalle_alcances').insert([{
@@ -90,6 +134,8 @@ const Calculator = () => {
         alcance3: resultados.a3
       }]);
     }
+
+
 
     // Limpiar localStorage al guardar exitosamente
     localStorage.removeItem('ecoHuella_formData');
@@ -115,40 +161,13 @@ const Calculator = () => {
   };
   const prevStep = () => setStep(prev => prev - 1);
 
-  const StepIndicator = () => (
-    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '3rem', position: 'relative' }}>
-      <div style={{ position: 'absolute', top: '24px', left: '0', right: '0', height: '4px', backgroundColor: 'var(--color-border)', zIndex: 0, transform: 'translateY(-50%)' }}></div>
-      <div style={{ position: 'absolute', top: '24px', left: '0', width: `${((step - 1) / 4) * 100}%`, height: '4px', backgroundColor: 'var(--color-primary)', zIndex: 0, transform: 'translateY(-50%)', transition: 'width 0.3s' }}></div>
 
-      {[
-        { id: 1, label: 'Inicio', icon: <CheckCircle size={20} /> },
-        { id: 2, label: 'Alcance 1', icon: <Factory size={20} /> },
-        { id: 3, label: 'Alcance 2', icon: <Zap size={20} /> },
-        { id: 4, label: 'Alcance 3', icon: <Truck size={20} /> },
-        { id: 5, label: 'Resultados', icon: <BarChart3 size={20} /> }
-      ].map((s) => (
-        <div key={s.id} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', zIndex: 1, gap: '0.5rem', width: '20%' }}>
-          <div style={{
-            width: '48px', height: '48px',
-            backgroundColor: step >= s.id ? 'var(--color-primary)' : 'var(--color-bg-card)',
-            border: step >= s.id ? '2px solid var(--color-primary)' : '2px solid var(--color-border)',
-            color: step >= s.id ? 'white' : 'var(--color-text-muted)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            transition: 'all 0.3s'
-          }}>
-            {s.icon}
-          </div>
-          <span style={{ fontWeight: step >= s.id ? '700' : '500', color: step >= s.id ? 'var(--color-text-main)' : 'var(--color-text-muted)', fontSize: '0.875rem', textAlign: 'center' }}>{s.label}</span>
-        </div>
-      ))}
-    </div>
-  );
 
   return (
     <div className="container" style={{ maxWidth: '800px' }}>
       <h1 className="h2 text-center mb-2">Medición de Huella de Carbono</h1>
 
-      <StepIndicator />
+      <StepIndicator step={step} />
 
       <div className="card">
         {step === 1 && (
