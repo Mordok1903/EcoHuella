@@ -54,10 +54,7 @@ const Calculator = () => {
       ...prev,
       [name]: value
     }));
-  };
-
-  
-
+  };  
   const resultados = calculateEmissions(formData, factores);
 
   const guardarResultados = async () => {
