@@ -2,20 +2,50 @@ import React from 'react';
 import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend, ArcElement } from 'chart.js';
 import { Bar, Doughnut } from 'react-chartjs-2';
 import { FileText, Download } from 'lucide-react';
+import { supabase } from '../lib/supabase';
 
 // Registrar componentes de Chart.js
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend, ArcElement);
 
 const Dashboard = () => {
-  // Datos mockeados (en producción vendrían de Supabase)
-  const hasData = true;
+  const [calculos, setCalculos] = React.useState([]);
+  const [detalles, setDetalles] = React.useState(null);
+  const [loading, setLoading] = React.useState(true);
+
+  React.useEffect(() => {
+    const fetchData = async () => {
+      // 1. Obtener los cálculos
+      const { data: calcData } = await supabase
+        .from('calculos')
+        .select('*')
+        .order('fecha_creacion', { ascending: false });
+        
+      if (calcData && calcData.length > 0) {
+        setCalculos(calcData);
+        // 2. Obtener el detalle del último cálculo para el gráfico
+        const ultimoId = calcData[0].id;
+        const { data: detData } = await supabase
+          .from('detalle_alcances')
+          .select('*')
+          .eq('calculo_id', ultimoId)
+          .single();
+          
+        if (detData) setDetalles(detData);
+      }
+      setLoading(false);
+    };
+    fetchData();
+  }, []);
+
+  const hasData = calculos.length > 0;
+  const ultimoCalculo = hasData ? calculos[0] : null;
   
   const barData = {
     labels: ['Alcance 1', 'Alcance 2', 'Alcance 3'],
     datasets: [
       {
         label: 'Emisiones (tCO₂eq)',
-        data: [1.25, 3.42, 0.85],
+        data: detalles ? [detalles.alcance1, detalles.alcance2, detalles.alcance3] : [0,0,0],
         backgroundColor: 'rgba(16, 185, 129, 0.8)',
         borderColor: '#059669',
         borderWidth: 1,
@@ -24,15 +54,14 @@ const Dashboard = () => {
   };
 
   const doughnutData = {
-    labels: ['Gasolina', 'Electricidad', 'Vuelos', 'Residuos'],
+    labels: ['Alcance 1', 'Alcance 2', 'Alcance 3'],
     datasets: [
       {
-        data: [1.25, 3.42, 0.55, 0.30],
+        data: detalles ? [detalles.alcance1, detalles.alcance2, detalles.alcance3] : [0,0,0],
         backgroundColor: [
           '#0EA5E9', // Azul
           '#10B981', // Verde
-          '#F59E0B', // Naranja
-          '#64748B'  // Gris
+          '#F59E0B'  // Naranja
         ],
         borderWidth: 0,
       },
@@ -46,12 +75,14 @@ const Dashboard = () => {
     },
   };
 
+  if (loading) return <div className="container text-center mt-2">Cargando datos...</div>;
+
   return (
     <div className="container">
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem', flexWrap: 'wrap', gap: '1rem' }}>
         <div>
           <h1 className="h2" style={{ margin: 0 }}>Mi Panel de Control</h1>
-          <p className="text-muted">Resumen del período: Medición Anual 2026</p>
+          <p className="text-muted">Resumen del período: {ultimoCalculo ? ultimoCalculo.nombre_periodo : 'Ninguno'}</p>
         </div>
         <div style={{ display: 'flex', gap: '1rem' }}>
           <button className="outline"><Download size={20} /> Exportar PDF</button>
@@ -62,18 +93,18 @@ const Dashboard = () => {
       <div className="grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '1.5rem', marginBottom: '2rem' }}>
         <div className="card" style={{ backgroundColor: 'var(--color-primary)', color: 'white', border: 'none' }}>
           <h3 style={{ fontSize: '1rem', fontWeight: '600', marginBottom: '0.5rem', color: 'rgba(255,255,255,0.9)' }}>Emisiones Totales</h3>
-          <p style={{ fontSize: '2.5rem', fontWeight: '700', lineHeight: 1 }}>5.52 <span style={{ fontSize: '1.25rem', fontWeight: '400' }}>tCO₂eq</span></p>
+          <p style={{ fontSize: '2.5rem', fontWeight: '700', lineHeight: 1 }}>{ultimoCalculo ? ultimoCalculo.total_emisiones : '0.00'} <span style={{ fontSize: '1.25rem', fontWeight: '400' }}>tCO₂eq</span></p>
         </div>
         
         <div className="card">
-          <h3 style={{ fontSize: '1rem', fontWeight: '600', marginBottom: '0.5rem', color: 'var(--color-text-muted)' }}>Mayor Fuente Emisora</h3>
-          <p style={{ fontSize: '1.5rem', fontWeight: '700', color: 'var(--color-secondary)' }}>Electricidad</p>
-          <p style={{ fontSize: '0.875rem', color: 'var(--color-text-muted)', marginTop: '0.25rem' }}>62% del total</p>
+          <h3 style={{ fontSize: '1rem', fontWeight: '600', marginBottom: '0.5rem', color: 'var(--color-text-muted)' }}>Cálculos Realizados</h3>
+          <p style={{ fontSize: '1.5rem', fontWeight: '700', color: 'var(--color-secondary)' }}>{calculos.length}</p>
+          <p style={{ fontSize: '0.875rem', color: 'var(--color-text-muted)', marginTop: '0.25rem' }}>históricos guardados</p>
         </div>
 
         <div className="card">
-          <h3 style={{ fontSize: '1rem', fontWeight: '600', marginBottom: '0.5rem', color: 'var(--color-text-muted)' }}>Equivalencia</h3>
-          <p style={{ fontSize: '1.5rem', fontWeight: '700', color: 'var(--color-secondary)' }}>256 árboles</p>
+          <h3 style={{ fontSize: '1rem', fontWeight: '600', marginBottom: '0.5rem', color: 'var(--color-text-muted)' }}>Equivalencia (Aprox)</h3>
+          <p style={{ fontSize: '1.5rem', fontWeight: '700', color: 'var(--color-secondary)' }}>{ultimoCalculo ? Math.round(ultimoCalculo.total_emisiones * 46) : 0} árboles</p>
           <p style={{ fontSize: '0.875rem', color: 'var(--color-text-muted)', marginTop: '0.25rem' }}>necesarios para absorber esto</p>
         </div>
       </div>
@@ -118,19 +149,21 @@ const Dashboard = () => {
               </tr>
             </thead>
             <tbody>
-              <tr style={{ borderBottom: '1px solid var(--color-border)' }}>
-                <td style={{ padding: '1rem', fontWeight: '600' }}>Medición Anual 2026</td>
-                <td style={{ padding: '1rem' }}>30 Ago 2026</td>
-                <td style={{ padding: '1rem' }}>1.25</td>
-                <td style={{ padding: '1rem' }}>3.42</td>
-                <td style={{ padding: '1rem' }}>0.85</td>
-                <td style={{ padding: '1rem', fontWeight: '700', color: 'var(--color-primary-dark)' }}>5.52</td>
-                <td style={{ padding: '1rem', textAlign: 'center' }}>
-                  <button className="outline" style={{ padding: '0.5rem' }} title="Ver Reporte">
-                    <FileText size={16} />
-                  </button>
-                </td>
-              </tr>
+              {calculos.map((calc) => (
+                <tr key={calc.id} style={{ borderBottom: '1px solid var(--color-border)' }}>
+                  <td style={{ padding: '1rem', fontWeight: '600' }}>{calc.nombre_periodo}</td>
+                  <td style={{ padding: '1rem' }}>{new Date(calc.fecha_creacion).toLocaleDateString()}</td>
+                  <td style={{ padding: '1rem' }}>-</td>
+                  <td style={{ padding: '1rem' }}>-</td>
+                  <td style={{ padding: '1rem' }}>-</td>
+                  <td style={{ padding: '1rem', fontWeight: '700', color: 'var(--color-primary-dark)' }}>{calc.total_emisiones}</td>
+                  <td style={{ padding: '1rem', textAlign: 'center' }}>
+                    <button className="outline" style={{ padding: '0.5rem' }} title="Ver Reporte">
+                      <FileText size={16} />
+                    </button>
+                  </td>
+                </tr>
+              ))}
             </tbody>
           </table>
         </div>

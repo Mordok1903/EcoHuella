@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Factory, Zap, Truck, CheckCircle, BarChart3, ArrowRight, ArrowLeft } from 'lucide-react';
+import { supabase } from '../lib/supabase';
 
 const Calculator = () => {
   const [step, setStep] = useState(1);
@@ -17,6 +18,22 @@ const Calculator = () => {
     residuos: 0,
     papel: 0
   });
+  
+  const [factores, setFactores] = useState({});
+  const [isSaving, setIsSaving] = useState(false);
+
+  useEffect(() => {
+    // Cargar factores de emisión desde la base de datos
+    const fetchFactores = async () => {
+      const { data, error } = await supabase.from('factores_emision').select('*');
+      if (data) {
+        const factorMap = {};
+        data.forEach(f => factorMap[f.fuente] = parseFloat(f.factor));
+        setFactores(factorMap);
+      }
+    };
+    fetchFactores();
+  }, []);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -27,30 +44,60 @@ const Calculator = () => {
   };
 
   const calcularResultados = () => {
-    // Factores de emisión aproximados (kg CO2eq)
-    const factorGasolina = 2.31; // por litro
-    const factorDiesel = 2.68; // por litro
-    const factorGLP = 2.98; // por kg
-    const factorElectricidad = 0.549; // por kWh (Red Perú)
-    const factorVuelos = 0.255; // por km
-    const factorResiduos = 0.572; // por kg
+    // Usar factores de la base de datos o defaults si aún no cargan
+    const factorGasolina = factores.gasolina || 2.31;
+    const factorDiesel = factores.diesel || 2.68;
+    const factorGLP = factores.glp || 2.98;
+    const factorElectricidad = factores.electricidad || 0.549;
+    const factorVuelos = factores.vuelos || 0.255;
+    const factorResiduos = factores.residuos || 0.572;
 
-    const alcance1 = (formData.gasolina * factorGasolina) + (formData.diesel * factorDiesel) + (formData.glp * factorGLP);
-    const alcance2 = (formData.electricidad * factorElectricidad);
-    const alcance3 = (formData.vuelos * factorVuelos) + (formData.residuos * factorResiduos);
+    const a1 = (formData.gasolina * factorGasolina) + (formData.diesel * factorDiesel) + (formData.glp * factorGLP);
+    const a2 = (formData.electricidad * factorElectricidad);
+    const a3 = (formData.vuelos * factorVuelos) + (formData.residuos * factorResiduos);
     
-    // Convertir a toneladas (tCO2eq)
+    // Retornar en toneladas (tCO2eq) sin redondear a string aún para guardar en BD
     return {
-      a1: (alcance1 / 1000).toFixed(2),
-      a2: (alcance2 / 1000).toFixed(2),
-      a3: (alcance3 / 1000).toFixed(2),
-      total: ((alcance1 + alcance2 + alcance3) / 1000).toFixed(2)
+      a1: a1 / 1000,
+      a2: a2 / 1000,
+      a3: a3 / 1000,
+      total: (a1 + a2 + a3) / 1000
     };
   };
 
   const resultados = calcularResultados();
 
-  const nextStep = () => setStep(prev => prev + 1);
+  const guardarResultados = async () => {
+    setIsSaving(true);
+    
+    // 1. Guardar en tabla calculos
+    const { data: calculoData, error: err1 } = await supabase.from('calculos').insert([{
+      nombre_periodo: formData.nombrePeriodo || 'Sin nombre',
+      anio: formData.anio,
+      total_emisiones: resultados.total
+    }]).select();
+
+    if (calculoData && calculoData.length > 0) {
+      // 2. Guardar en tabla detalle
+      await supabase.from('detalle_alcances').insert([{
+        calculo_id: calculoData[0].id,
+        alcance1: resultados.a1,
+        alcance2: resultados.a2,
+        alcance3: resultados.a3
+      }]);
+    }
+    
+    setIsSaving(false);
+    setStep(5);
+  };
+
+  const nextStep = () => {
+    if (step === 4) {
+      guardarResultados();
+    } else {
+      setStep(prev => prev + 1);
+    }
+  };
   const prevStep = () => setStep(prev => prev - 1);
 
   const StepIndicator = () => (
@@ -181,8 +228,10 @@ const Calculator = () => {
             </div>
 
             <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-              <button className="outline" onClick={prevStep}><ArrowLeft size={20} /> Anterior</button>
-              <button onClick={nextStep}>Calcular Resultados <BarChart3 size={20} /></button>
+              <button className="outline" onClick={prevStep} disabled={isSaving}><ArrowLeft size={20} /> Anterior</button>
+              <button onClick={nextStep} disabled={isSaving}>
+                {isSaving ? 'Guardando...' : 'Calcular Resultados'} <BarChart3 size={20} />
+              </button>
             </div>
           </div>
         )}
@@ -198,24 +247,24 @@ const Calculator = () => {
             <div style={{ backgroundColor: 'var(--color-bg-main)', padding: '2rem', border: '1px solid var(--color-border)', margin: '2rem 0' }}>
               <h3 style={{ fontSize: '1.25rem', color: 'var(--color-text-muted)', marginBottom: '0.5rem' }}>Total Emisiones</h3>
               <p style={{ fontSize: '4rem', fontWeight: '700', color: 'var(--color-secondary)', lineHeight: 1 }}>
-                {resultados.total} <span style={{ fontSize: '1.5rem', fontWeight: '400' }}>tCO₂eq</span>
+                {resultados.total.toFixed(2)} <span style={{ fontSize: '1.5rem', fontWeight: '400' }}>tCO₂eq</span>
               </p>
             </div>
 
             <div className="grid" style={{ gridTemplateColumns: 'repeat(3, 1fr)', gap: '1rem', marginBottom: '2rem' }}>
               <div style={{ padding: '1rem', border: '1px solid var(--color-border)', backgroundColor: '#F8FAFC' }}>
                 <div style={{ fontWeight: '600', color: 'var(--color-secondary)' }}>Alcance 1</div>
-                <div style={{ fontSize: '1.5rem', fontWeight: '700' }}>{resultados.a1}</div>
+                <div style={{ fontSize: '1.5rem', fontWeight: '700' }}>{resultados.a1.toFixed(2)}</div>
                 <div style={{ fontSize: '0.875rem', color: 'var(--color-text-muted)' }}>tCO₂eq</div>
               </div>
               <div style={{ padding: '1rem', border: '1px solid var(--color-border)', backgroundColor: '#F8FAFC' }}>
                 <div style={{ fontWeight: '600', color: 'var(--color-secondary)' }}>Alcance 2</div>
-                <div style={{ fontSize: '1.5rem', fontWeight: '700' }}>{resultados.a2}</div>
+                <div style={{ fontSize: '1.5rem', fontWeight: '700' }}>{resultados.a2.toFixed(2)}</div>
                 <div style={{ fontSize: '0.875rem', color: 'var(--color-text-muted)' }}>tCO₂eq</div>
               </div>
               <div style={{ padding: '1rem', border: '1px solid var(--color-border)', backgroundColor: '#F8FAFC' }}>
                 <div style={{ fontWeight: '600', color: 'var(--color-secondary)' }}>Alcance 3</div>
-                <div style={{ fontSize: '1.5rem', fontWeight: '700' }}>{resultados.a3}</div>
+                <div style={{ fontSize: '1.5rem', fontWeight: '700' }}>{resultados.a3.toFixed(2)}</div>
                 <div style={{ fontSize: '0.875rem', color: 'var(--color-text-muted)' }}>tCO₂eq</div>
               </div>
             </div>
