@@ -3,24 +3,36 @@ import { Factory, Zap, Truck, CheckCircle, BarChart3, ArrowRight, ArrowLeft } fr
 import { supabase } from '../lib/supabase';
 
 const Calculator = () => {
-  const [step, setStep] = useState(1);
-  const [formData, setFormData] = useState({
+  // Inicializar estado desde localStorage si existe
+  const getInitialState = (key, defaultValue) => {
+    const saved = localStorage.getItem(key);
+    return saved ? JSON.parse(saved) : defaultValue;
+  };
+
+  const [step, setStep] = useState(() => getInitialState('ecoHuella_step', 1));
+  const [formData, setFormData] = useState(() => getInitialState('ecoHuella_formData', {
     nombrePeriodo: '',
     anio: '2026',
-    // Alcance 1
     gasolina: 0,
     diesel: 0,
     glp: 0,
-    // Alcance 2
     electricidad: 0,
-    // Alcance 3
     vuelos: 0,
     residuos: 0,
     papel: 0
-  });
+  }));
   
   const [factores, setFactores] = useState({});
   const [isSaving, setIsSaving] = useState(false);
+
+  // Guardar en localStorage cada vez que cambien los datos o el paso
+  useEffect(() => {
+    localStorage.setItem('ecoHuella_step', JSON.stringify(step));
+  }, [step]);
+
+  useEffect(() => {
+    localStorage.setItem('ecoHuella_formData', JSON.stringify(formData));
+  }, [formData]);
 
   useEffect(() => {
     // Cargar factores de emisión desde la base de datos
@@ -87,8 +99,19 @@ const Calculator = () => {
       }]);
     }
     
+    // Limpiar localStorage al guardar exitosamente
+    localStorage.removeItem('ecoHuella_formData');
+    localStorage.removeItem('ecoHuella_step');
+    
     setIsSaving(false);
     setStep(5);
+  };
+
+  const calcularDeNuevo = () => {
+    setFormData({
+      nombrePeriodo: '', anio: '2026', gasolina: 0, diesel: 0, glp: 0, electricidad: 0, vuelos: 0, residuos: 0, papel: 0
+    });
+    setStep(1);
   };
 
   const nextStep = () => {
@@ -270,7 +293,7 @@ const Calculator = () => {
             </div>
 
             <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center' }}>
-              <button className="outline" onClick={() => setStep(1)}>Calcular de Nuevo</button>
+              <button className="outline" onClick={calcularDeNuevo}>Calcular de Nuevo</button>
               <button onClick={() => window.location.href='/dashboard'}>Ir a Mi Panel</button>
             </div>
           </div>
