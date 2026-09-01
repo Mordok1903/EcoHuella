@@ -36,7 +36,7 @@ create table if not exists public.detalle_fuentes (
 create index if not exists detalle_fuentes_calculo_id_idx
   on public.detalle_fuentes(calculo_id);
 
-grant select, insert, update, delete
+grant select, insert
   on public.detalle_fuentes
   to anon, authenticated;
 
