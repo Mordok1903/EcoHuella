@@ -104,3 +104,24 @@ export const normalizeImportedRows = (rows = []) => {
 
   return { records, errors };
 };
+
+export const tableRowsToObjects = (tableRows = []) => {
+  const [headers, ...rows] = tableRows;
+
+  if (!Array.isArray(headers) || headers.length === 0) {
+    return [];
+  }
+
+  return rows
+    .filter((row) =>
+      row.some((cell) => cell !== null && String(cell).trim() !== '')
+    )
+    .map((row) =>
+      Object.fromEntries(
+        headers.map((header, index) => [
+          String(header ?? '').trim(),
+          row[index],
+        ])
+      )
+    );
+};

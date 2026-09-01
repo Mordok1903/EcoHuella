@@ -1,7 +1,11 @@
 import React from 'react';
 import Papa from 'papaparse';
+import readXlsxFile from 'read-excel-file/browser';
 import { AlertTriangle, CheckCircle, Upload } from 'lucide-react';
-import { normalizeImportedRows } from '../services/importNormalizer';
+import {
+  normalizeImportedRows,
+  tableRowsToObjects,
+} from '../services/importNormalizer';
 import { useNavigate } from 'react-router-dom';
 
 const SmartImport = () => {
@@ -11,7 +15,19 @@ const SmartImport = () => {
   const [errors, setErrors] = React.useState([]);
   const [isReading, setIsReading] = React.useState(false);
 
-  const handleFile = (event) => {
+  const applyRows = (data, parsingErrors = []) => {
+    const normalized = normalizeImportedRows(data);
+    const fileErrors = parsingErrors.map((error) => ({
+      row: (error.row ?? 0) + 2,
+      message: error.message,
+    }));
+
+    setRecords(normalized.records);
+    setErrors([...fileErrors, ...normalized.errors]);
+    setIsReading(false);
+  };
+
+  const handleFile = async (event) => {
     const file = event.target.files?.[0];
 
     if (!file) return;
@@ -21,19 +37,23 @@ const SmartImport = () => {
     setErrors([]);
     setIsReading(true);
 
+    if (file.name.toLowerCase().endsWith('.xlsx')) {
+      try {
+        const tableRows = await readXlsxFile(file);
+        applyRows(tableRowsToObjects(tableRows));
+      } catch (error) {
+        setErrors([{ row: '-', message: error.message }]);
+        setIsReading(false);
+      }
+
+      return;
+    }
+
     Papa.parse(file, {
       header: true,
       skipEmptyLines: true,
       complete: ({ data, errors: parseErrors }) => {
-        const normalized = normalizeImportedRows(data);
-        const csvErrors = parseErrors.map((error) => ({
-          row: (error.row ?? 0) + 2,
-          message: error.message,
-        }));
-
-        setRecords(normalized.records);
-        setErrors([...csvErrors, ...normalized.errors]);
-        setIsReading(false);
+        applyRows(data, parseErrors);
       },
       error: (error) => {
         setErrors([{ row: '-', message: error.message }]);
@@ -41,7 +61,7 @@ const SmartImport = () => {
       },
     });
   };
-  
+
   const handleUseData = () => {
     const importedData = records.reduce((totals, record) => {
       totals[record.source] = (totals[record.source] || 0) + record.amount;
@@ -51,20 +71,20 @@ const SmartImport = () => {
     navigate('/calculadora', {
       state: { importedData },
     });
-  };  
+  };
 
   return (
     <div className="container" style={{ maxWidth: '1000px' }}>
       <div style={{ marginBottom: '2rem' }}>
         <h1 className="h2">Importar datos ambientales</h1>
         <p className="text-muted">
-          Carga un archivo CSV para detectar, validar y clasificar tus consumos
+          Carga un archivo CSV o Excel para detectar, validar y clasificar tus consumos
           antes de calcular la huella de carbono.
         </p>
       </div>
 
       <section className="card" style={{ padding: '2rem', marginBottom: '2rem' }}>
-        <h2 style={{ marginTop: 0 }}>1. Selecciona un archivo CSV</h2>
+        <h2 style={{ marginTop: 0 }}>1. Selecciona un archivo CSV o Excel</h2>
         <p className="text-muted">
           Debe contener las columnas <strong>fuente</strong>,{' '}
           <strong>cantidad</strong> y <strong>unidad</strong>.
@@ -82,13 +102,13 @@ const SmartImport = () => {
           }}
         >
           <Upload size={18} />
-          Seleccionar CSV
+          Seleccionar archivo
         </label>
 
         <input
           id="csv-file"
           type="file"
-          accept=".csv,text/csv"
+          accept=".csv,.xlsx,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
           onChange={handleFile}
           style={{ display: 'none' }}
         />

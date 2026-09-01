@@ -5,6 +5,9 @@ import {
   DEFAULT_EMISSION_FACTORS,
 } from './emissionCalculator.js';
 
+
+
+
 const approximatelyEqual = (actual, expected) => {
   assert.ok(
     Math.abs(actual - expected) < 1e-12,

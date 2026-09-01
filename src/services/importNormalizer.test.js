@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {
   normalizeImportedRows,
   SOURCE_CONFIG,
+  tableRowsToObjects,
 } from './importNormalizer.js';
 
 test('normaliza filas ambientales válidas', () => {
@@ -51,4 +52,19 @@ test('reporta fuente, cantidad y unidad inválidas', () => {
   assert.match(result.errors[1].message, /Cantidad/);
   assert.match(result.errors[2].message, /unidad/);
   assert.equal(SOURCE_CONFIG.glp.unit, 'kg');
+});
+
+
+test('convierte filas de Excel usando la primera fila como encabezados', () => {
+  const rows = [
+    ['fuente', 'cantidad', 'unidad'],
+    ['Gasolina', 10, 'L'],
+    ['Electricidad', 100, 'kWh'],
+    [null, null, null],
+  ];
+
+  assert.deepEqual(tableRowsToObjects(rows), [
+    { fuente: 'Gasolina', cantidad: 10, unidad: 'L' },
+    { fuente: 'Electricidad', cantidad: 100, unidad: 'kWh' },
+  ]);
 });
