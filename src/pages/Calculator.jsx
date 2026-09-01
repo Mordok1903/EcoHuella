@@ -5,7 +5,7 @@ import { calculateEmissions } from '../services/emissionCalculator';
 import { useLocation } from 'react-router-dom';
 
 
-const StepIndicator = () => (
+const StepIndicator = ({ step }) => (
   <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '3rem', position: 'relative' }}>
     <div style={{ position: 'absolute', top: '24px', left: '0', right: '0', height: '4px', backgroundColor: 'var(--color-border)', zIndex: 0, transform: 'translateY(-50%)' }}></div>
     <div style={{ position: 'absolute', top: '24px', left: '0', width: `${((step - 1) / 4) * 100}%`, height: '4px', backgroundColor: 'var(--color-primary)', zIndex: 0, transform: 'translateY(-50%)', transition: 'width 0.3s' }}></div>
